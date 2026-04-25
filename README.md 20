@@ -15,7 +15,7 @@ st.markdown("""
     .chat-card { background: #111; border-radius: 15px; padding: 20px; border-left: 5px solid #00ffcc; margin-bottom: 10px; }
     </style>
     """, unsafe_allow_html=True)
-
+genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 
 # --- 4. SIDEBAR - THE COMMAND CENTER ---
 with st.sidebar:
@@ -72,7 +72,7 @@ if prompt := st.chat_input("Connect with the future..."):
                 full_res = ""
                 for chunk in response.text.split():
                     full_res += chunk + " "
-                    time.sleep(0.05)
+        4            time.sleep(0.05)
                     placeholder.markdown(full_res + "▌")
                 placeholder.markdown(full_res)
                 
