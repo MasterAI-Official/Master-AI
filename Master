@@ -1,0 +1,75 @@
+import streamlit as st
+import google.generativeai as genai
+from gtts import gTTS
+import os
+from PIL import Image
+
+# --- CONFIG ---
+st.set_page_config(page_title="Master.ai Pro Max", layout="wide")
+genai.configure(api_key="AIzaSyA9Vs7JK0nXUmZHcJVv0sofdC_Ujuvx-es")
+
+st.markdown("""
+    <style>
+    .stApp { background: #000000; color: #00ffcc; }
+    .stButton>button { width: 100%; border-radius: 20px; background: linear-gradient(90deg, #00ffcc, #0099ff); }
+    </style>
+    """, unsafe_allow_html=True)
+
+# --- SIDEBAR MODES ---
+with st.sidebar:
+    st.title("⚡ Master Control")
+    mode = st.radio("Select Tool:", ["Smart Chat 💬", "Vision Master (Photo/Docs) 📷", "Expert Coder 💻"])
+    st.write("---")
+    voice_on = st.checkbox("Enable Voice Response 🔊")
+
+# --- VISION MODE (Photos & Homework Solver) ---
+if mode == "Vision Master (Photo/Docs) 📷":
+    st.header("📷 Vision Master - Photo & Document Solver")
+    uploaded_file = st.file_uploader("Upload a photo or document screenshot...", type=["jpg", "jpeg", "png"])
+    
+    if uploaded_file is not None:
+        image = Image.open(uploaded_file)
+        st.image(image, caption="Uploaded Image", use_column_width=True)
+        
+        user_query = st.text_input("What should I do with this image? (e.g., 'Solve this math problem' or 'Explain this')")
+        
+        if st.button("Analyze Image"):
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            response = model.generate_content([user_query if user_query else "Explain this image", image])
+            st.markdown(f"### 🤖 Master's Analysis:\n{response.text}")
+
+# --- CHAT MODE (With Voice Support) ---
+elif mode == "Smart Chat 💬":
+    st.header("💬 Smart Chat with Master.ai")
+    
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+
+    for m in st.session_state.messages:
+        with st.chat_message(m["role"]): st.markdown(m["content"])
+
+    if prompt := st.chat_input("Ask Master.ai anything..."):
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"): st.markdown(prompt)
+
+        with st.chat_message("assistant"):
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            response = model.generate_content(prompt)
+            st.markdown(response.text)
+            
+            # VOICE FEATURE
+            if voice_on:
+                tts = gTTS(text=response.text[:200], lang='en') # پہلا تھوڑا حصہ بولے گا تاکہ لوڈنگ تیز ہو
+                tts.save("resp.mp3")
+                st.audio("resp.mp3")
+                
+            st.session_state.messages.append({"role": "assistant", "content": response.text})
+
+# --- CODER MODE ---
+elif mode == "Expert Coder 💻":
+    st.header("💻 Expert Coding Assistant")
+    code_prompt = st.text_area("What code do you need?")
+    if st.button("Generate & Explain"):
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        res = model.generate_content(f"Write code for: {code_prompt}. Then explain it in Roman Urdu.")
+        st.markdown(res.text)
