@@ -16,7 +16,6 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. THE BRAIN (API KEY) ---
 
 # --- 4. SIDEBAR - THE COMMAND CENTER ---
 with st.sidebar:
