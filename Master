@@ -6,7 +6,7 @@ from PIL import Image
 
 # --- CONFIG ---
 st.set_page_config(page_title="Master.ai Pro Max", layout="wide")
-genai.configure(api_key="AIzaSyA9Vs7JK0nXUmZHcJVv0sofdC_Ujuvx-es")
+
 
 st.markdown("""
     <style>
