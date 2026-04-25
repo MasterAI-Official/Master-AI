@@ -17,7 +17,6 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # --- 3. THE BRAIN (API KEY) ---
-genai.configure(api_key="AIzaSyA9Vs7JK0nXUmZHcJVv0sofdC_Ujuvx-es")
 
 # --- 4. SIDEBAR - THE COMMAND CENTER ---
 with st.sidebar:
