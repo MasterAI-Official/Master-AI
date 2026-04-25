@@ -10,7 +10,8 @@ import io
 st.set_page_config(page_title="Master.ai God Mode", page_icon="🧠", layout="wide")
 
 # API Setup
-genai.configure(api_key="AIzaSyA9Vs7JK0nXUmZHcJVv0sofdC_Ujuvx-es")
+genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+
 
 # --- HACKER NEON THEME (CSS) ---
 st.markdown("""
