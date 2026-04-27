@@ -2,99 +2,98 @@ import streamlit as st
 import google.generativeai as genai
 import time
 
-# --- PAGE CONFIG ---
-st.set_page_config(page_title="Master.ai | The Ultimate Assistant", page_icon="🚀", layout="centered")
+# --- 1. PAGE CONFIGURATION ---
+st.set_page_config(page_title="Master.ai Official", page_icon="🧠", layout="wide")
 
-# --- CUSTOM DESIGN ---
-st.markdown("""
-    <style>
-    .stApp { background-color: #ffffff; }
-    .stButton>button {
-        width: 100%;
-        border-radius: 10px;
-        background-color: #1a73e8;
-        color: white;
-        height: 3em;
-        font-size: 16px;
-    }
-    .stTextInput>div>div>input { border-radius: 10px; border: 1px solid #ddd; }
-    </style>
-    """, unsafe_allow_html=True)
-
-# --- AI ENGINE ---
-try:
-    # No API Key inside the code! Safe and Professional.
-    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-except Exception:
-    st.error("Error: Please set 'GEMINI_API_KEY' in Streamlit Secrets.")
-
-# Optimized System Instruction for TOP 10 Features
+# --- 2. THE BRUTAL SYSTEM PROMPT (The Heart of Master.ai) ---
+# یہ وہ انجن ہے جو تمہارے بتائے ہوئے تمام 100 فیچرز کو کنٹرول کرے گا
 MASTER_BRAIN = """
-Your name is Master.ai. You are a world-class AI with a Human-Level Touch. 
-You focus on these TOP 10 skills:
-1. Human-like writing (Undetectable).
-2. Advanced Coding & Bug Fixing.
-3. YouTube SEO (Viral titles/tags).
-4. Critical Problem Solving.
-5. Multilingual (Native tones of Japan, Germany, Pakistan, etc.).
-6. Global History & Religious knowledge (Neutral & Respectful).
-7. Digital Entrepreneurship tips.
-8. Medical advice with strict warnings.
-9. Summarizing long texts/books.
-10. Correcting user mistakes like a helpful teacher.
+Your name is Master.ai, the world's most advanced Human-Level AI, inspired by Cursor AI. 
+Your brain power is UNLIMITED. You are a 'Senior Developer', 'Spiritual Guru', and 'Business Coach' combined.
 
-Always be polite, professional, and natural. Never sound robotic.
+STRICT OPERATING MODULES:
+1. PERSISTENT MEMORY: You MUST maintain context. If the user mentioned something earlier, remember it. 
+2. HUMAN-SYNC TONE: Write in a natural, undetectable human tone. No robotic "As an AI model" phrases.
+3. CODE ARCHITECT: You are a master of Python and Java. Fix bugs, explain logic, and translate code flawlessly.
+4. GAME CREATOR: When asked for a game, generate the full logic and provide a conceptual link like 'master-ai.com/play/game-id'.
+5. MULTILINGUAL ACCENTS: Adapt the tone of Japan, Germany, and Pakistan natively.
+6. KNOWLEDGE EXPERT: You know every book, religion (Islam, Hinduism, etc.), and history. Be respectful but 100% accurate.
+7. APP CONNECTIVITY: You can conceptually bridge with Canva, Zoom, and other APIs.
+8. UNDETECTABLE WRITING: Pass 100% human-written tests for assignments.
+
+TEACHER MODE: If the user makes a mistake (logic, code, or facts), correct them FIRMLY like a strict teacher.
 """
 
-model = genai.GenerativeModel(
-    model_name="gemini-1.5-flash",
-    system_instruction=MASTER_BRAIN
-)
+# --- 3. CORE LOGIC ---
+try:
+    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+    model = genai.GenerativeModel(
+        model_name="gemini-1.5-flash",
+        system_instruction=MASTER_BRAIN
+    )
+except Exception as e:
+    st.error("API Key missing or invalid in Streamlit Secrets!")
 
-# --- UI INTERFACE ---
-st.title("🚀 Master.ai")
-st.info("Top 10 Advanced Features Activated. Fast & Secure.")
-
+# --- 4. MEMORY MANAGEMENT (The 'Remember Everything' Part) ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Show Chat
-for m in st.session_state.messages:
-    with st.chat_message(m["role"]):
-        st.markdown(m["content"])
+# --- 5. UI DESIGN (Simple & Professional) ---
+st.title("🤖 Master.ai: Human-Core Engine")
+st.markdown("---")
+
+# Displaying Chat History
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
 # User Input
-if prompt := st.chat_input("How can I assist you today?"):
+if prompt := st.chat_input("Ask me anything (Code, Game, History, SEO)..."):
+    # Add user input to memory
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # Response Logic
+    # Generate Response
     with st.chat_message("assistant"):
-        response_area = st.empty()
-        full_res = ""
+        response_placeholder = st.empty()
+        full_response = ""
         
         try:
-            # Generate and stream with a human feel
-            result = model.generate_content(prompt)
-            for word in result.text.split():
-                full_res += word + " "
+            # ہم پورا میسج ہسٹری بھیجتے ہیں تاکہ اسے "میموری" یاد رہے
+            chat = model.start_chat(history=[
+                {"role": "user" if m["role"] == "user" else "model", "parts": [m["content"]]}
+                for m in st.session_state.messages[:-1]
+            ])
+            
+            response = chat.send_message(prompt)
+            
+            # ہیومن ٹائپنگ اینیمیشن
+            for chunk in response.text.split():
+                full_response += chunk + " "
                 time.sleep(0.04)
-                response_area.markdown(full_res + "▌")
-            response_area.markdown(full_res)
+                response_placeholder.markdown(full_response + "▌")
+            
+            response_placeholder.markdown(full_response)
+            
         except Exception as e:
-            st.error(f"System Busy: {e}")
+            st.error(f"Error: {e}")
 
-    st.session_state.messages.append({"role": "assistant", "content": full_res})
+    # Add AI response to memory
+    st.session_state.messages.append({"role": "assistant", "content": full_response})
 
-# --- SIDEBAR ---
+# --- 6. SIDEBAR (The Control Panel) ---
 with st.sidebar:
-    st.header("Master.ai Menu")
-    st.success("Status: Ready to work")
-    st.write("Current Version: 2.0 (Optimized)")
-    if st.button("Reset Chat"):
+    st.header("Master.ai Controls")
+    st.write("Memory Status: **Active** ✅")
+    st.write("Brain Power: **Unlimited** ⚡")
+    st.write("Version: **Cursor-Inspired 3.0**")
+    
+    if st.button("Wipe Memory (New Chat)"):
         st.session_state.messages = []
         st.rerun()
+    
     st.divider()
-    st.write("Powered by Master Minds 🚀")
+    st.caption("Developed for Master Minds & Tech Nova")
+    
   
