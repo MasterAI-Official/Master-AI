@@ -56,7 +56,7 @@ CORE RULES:
 try:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
     model = genai.GenerativeModel(
-        model_name="gemini-1.5-flash",
+        model_name="models/gemini-1.5-flash"
         system_instruction=MASTER_PROMPT
     )
 except Exception as e:
