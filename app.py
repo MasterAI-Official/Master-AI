@@ -1,6 +1,7 @@
 import streamlit as st
 import google.generativeai as genai
 import time
+
 # --- 1. PAGE CONFIGURATION ---
 st.set_page_config(
     page_title="Master.ai | Human-Core AI",
