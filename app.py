@@ -51,11 +51,18 @@ CORE RULES:
 5. For games: Provide logic and a play-link concept.
 6. Support multiple languages (Urdu, Hindi, English, German, etc.) natively.
 """
-
-# --- 5. API ENGINE ---
+    # --- 5. API ENGINE (UPDATED FIX) ---
 try:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+    
+    # یہاں ماڈل کا نام بالکل سادہ رکھیں، بغیر 'models/' کے
     model = genai.GenerativeModel(
+        model_name="gemini-1.5-flash", 
+        system_instruction=MASTER_PROMPT
+    )
+except Exception as e:
+    st.error("⚠️ API Key Error: Please add 'GEMINI_API_KEY' in Streamlit Secrets!")
+    
         model_name="models/gemini-1.5-flash",
         system_instruction=MASTER_PROMPT
     )
