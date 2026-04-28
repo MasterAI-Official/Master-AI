@@ -57,7 +57,8 @@ try:
     
     # یہاں ماڈل کا نام بالکل سادہ رکھیں، بغیر 'models/' کے
     model = genai.GenerativeModel(
-        model_name="gemini-1.5-flash", 
+        model_name="gemini-1.5-flash",
+    
         system_instruction=MASTER_PROMPT
     )
 except Exception as e:
