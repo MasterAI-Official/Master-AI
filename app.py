@@ -1,7 +1,6 @@
 import streamlit as st
 import google.generativeai as genai
 import time
-
 # --- 1. PAGE CONFIGURATION ---
 st.set_page_config(
     page_title="Master.ai | Human-Core AI",
@@ -38,7 +37,7 @@ try:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
     # Yahan model name bilkul sahi format mein hai
     model = genai.GenerativeModel(
-        model_name="gemini-1.5-flash",
+        model_name="gemini-pro",
         system_instruction=MASTER_PROMPT
     )
 except Exception as e:
