@@ -1,96 +1,93 @@
 import streamlit as st
 import os
 import requests
-from bs4 import BeautifulSoup
+import json
 from dotenv import load_dotenv
-from langdetect import detect
+from bs4 import BeautifulSoup
 from pypdf import PdfReader
-from openai import OpenAI
+import time
 
 # ----------------------------
-# LOAD API KEY
+# Load API Key (OpenRouter)
 # ----------------------------
 load_dotenv()
 
-API_KEY = None
+OPENROUTER_API_KEY = None
 
-if "OPENAI_API_KEY" in st.secrets:
-    API_KEY = st.secrets["OPENAI_API_KEY"]
+if "OPENROUTER_API_KEY" in st.secrets:
+    OPENROUTER_API_KEY = st.secrets["OPENROUTER_API_KEY"]
 else:
-    API_KEY = os.getenv("OPENAI_API_KEY")
+    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
-if not API_KEY:
-    st.error("Missing API Key. Add it in Streamlit Secrets or .env file.")
+if not OPENROUTER_API_KEY:
+    st.error("OPENROUTER_API_KEY not found. Add it in Streamlit Secrets or .env file.")
     st.stop()
 
-client = OpenAI(api_key=API_KEY)
-
 # ----------------------------
-# SYSTEM PROMPT (PREMIUM ENGINEER MODE)
+# Premium System Prompt
 # ----------------------------
 SYSTEM_PROMPT = """
-You are a world-class senior software engineer and system architect.
+You are a world-class senior software engineer, architect, and debugging specialist.
 
 Rules:
-- Never mention AI, model, GPT, OpenAI, or system identity.
-- Act like a professional software engineer consultant.
-- Always respond in the user's language.
-- Match tone automatically.
-- Be precise, structured, and production-focused.
+- Never mention AI, model, GPT, OpenAI, or internal identity.
+- Behave like a premium professional technical consultant.
+- Always respond in the same language as the user.
+- Match the user's tone automatically.
 
 Core Skills:
-- Full stack development (frontend + backend)
-- APIs, databases, cloud deployment
-- Debugging complex systems
-- Code optimization and security fixes
+- Full-stack development
+- Mobile app development guidance
+- Web development
+- API design
+- Database design
+- Debugging and repair
+- Security and optimization
 
-Coding Standards:
-- Always produce clean, production-ready code.
-- Always include error handling.
-- Always avoid insecure patterns.
-- Never expose secrets or keys.
-- Prefer scalable architecture.
+Repair Mode Rules:
+When user asks to fix/repair/debug:
+- Provide structured output:
+  1) PROBLEM SUMMARY
+  2) ROOT CAUSE
+  3) FIXED FULL CODE
+  4) IMPROVEMENTS
+  5) SECURITY FIXES
+  6) PERFORMANCE OPTIMIZATION
+  7) HOW TO RUN / TEST
 
-DEBUG MODE:
-When user provides code:
-1. Identify errors
-2. Find root cause
-3. Fix full code
-4. Improve performance
-5. Improve security
-6. Explain clearly
-
-OUTPUT FORMAT FOR FIX:
-- PROBLEM SUMMARY
-- ROOT CAUSE
-- FIXED CODE
-- IMPROVEMENTS
-- SECURITY FIXES
-- HOW TO RUN
-
-REPAIR MODE:
-If user says "fix" or "repair", treat as highest priority and rewrite code fully.
-
-WEB/PDF MODE:
-Use provided content as source of truth and summarize clearly.
-
-GOAL:
-Deliver enterprise-level engineering solutions.
+Always provide production-ready answers.
 """
 
 # ----------------------------
-# FUNCTIONS
+# OpenRouter Chat Function
 # ----------------------------
+def openrouter_chat(messages, model="deepseek/deepseek-chat", temperature=0.6):
+    url = "https://openrouter.ai/api/v1/chat/completions"
 
-def ask_model(messages, temperature=0.7):
-    res = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "system", "content": SYSTEM_PROMPT}] + messages,
-        temperature=temperature
-    )
-    return res.choices[0].message.content
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "http://localhost",
+        "X-Title": "Premium Assistant"
+    }
 
+    payload = {
+        "model": model,
+        "messages": [{"role": "system", "content": SYSTEM_PROMPT}] + messages,
+        "temperature": temperature
+    }
 
+    response = requests.post(url, headers=headers, data=json.dumps(payload), timeout=60)
+
+    if response.status_code != 200:
+        raise Exception(response.text)
+
+    data = response.json()
+    return data["choices"][0]["message"]["content"]
+
+# ----------------------------
+# Website Extractor
+# ----------------------------
 def get_website_text(url):
     headers = {"User-Agent": "Mozilla/5.0"}
     r = requests.get(url, headers=headers, timeout=15)
@@ -102,7 +99,9 @@ def get_website_text(url):
     text = soup.get_text(separator=" ")
     return " ".join(text.split())[:7000]
 
-
+# ----------------------------
+# PDF Extractor
+# ----------------------------
 def get_pdf_text(file):
     reader = PdfReader(file)
     text = ""
@@ -113,100 +112,189 @@ def get_pdf_text(file):
     return text[:9000]
 
 # ----------------------------
-# UI
+# Page UI Config
 # ----------------------------
-st.set_page_config(page_title="Premium Code Expert", layout="wide")
-st.title("Premium Code Expert System")
-
-# Sidebar
-st.sidebar.header("Settings")
-
-tone = st.sidebar.selectbox("Tone", [
-    "Auto", "Professional", "Friendly", "Strict", "Developer"
-])
-
-temperature = st.sidebar.slider("Creativity", 0.0, 1.0, 0.5)
-
-st.sidebar.markdown("---")
-
-# PDF Upload
-pdf_file = st.sidebar.file_uploader("Upload PDF", type=["pdf"])
-pdf_text = ""
-
-if pdf_file:
-    pdf_text = get_pdf_text(pdf_file)
-    st.sidebar.success("PDF Loaded")
-
-# Website Input
-url = st.sidebar.text_input("Website URL")
-web_text = ""
-
-if url:
-    try:
-        web_text = get_website_text(url)
-        st.sidebar.success("Website Loaded")
-    except:
-        st.sidebar.error("Failed to load website")
+st.set_page_config(page_title="Premium Assistant", layout="wide")
 
 # ----------------------------
-# CHAT MEMORY
+# Premium Styling (ChatGPT-like)
+# ----------------------------
+st.markdown("""
+<style>
+    .block-container {
+        padding-top: 1.2rem;
+        padding-bottom: 2rem;
+        max-width: 1200px;
+    }
+    .stChatMessage {
+        border-radius: 16px;
+        padding: 8px;
+    }
+    .stTextArea textarea {
+        border-radius: 12px;
+    }
+    .stButton button {
+        border-radius: 12px;
+        padding: 0.6rem 1rem;
+        font-weight: 600;
+    }
+    .sidebar-title {
+        font-size: 20px;
+        font-weight: 700;
+        margin-bottom: 10px;
+    }
+    .section-title {
+        font-size: 16px;
+        font-weight: 700;
+        margin-top: 15px;
+        margin-bottom: 8px;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# ----------------------------
+# Session State Init
 # ----------------------------
 if "chat" not in st.session_state:
     st.session_state.chat = []
 
-# ----------------------------
-# CHAT UI (FIXED SAFE VERSION)
-# ----------------------------
-st.subheader("Chat Interface")
+if "pdf_text" not in st.session_state:
+    st.session_state.pdf_text = ""
 
-for msg in st.session_state.chat:
-    with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
+if "web_text" not in st.session_state:
+    st.session_state.web_text = ""
 
-user_input = st.chat_input("Ask anything... (code, debug, explain, fix)")
+if "last_request" not in st.session_state:
+    st.session_state.last_request = 0
+
+# ----------------------------
+# Sidebar (ChatGPT Style)
+# ----------------------------
+st.sidebar.markdown("<div class='sidebar-title'>⚙️ Settings</div>", unsafe_allow_html=True)
+
+model = st.sidebar.selectbox("Model", [
+    "deepseek/deepseek-chat",
+    "deepseek/deepseek-coder",
+    "meta-llama/llama-3.1-70b-instruct",
+    "mistralai/mistral-large"
+])
+
+tone = st.sidebar.selectbox("Tone Style", [
+    "Auto",
+    "Professional",
+    "Friendly",
+    "Strict Developer",
+    "News Style"
+])
+
+temperature = st.sidebar.slider("Creativity", 0.0, 1.0, 0.6, 0.1)
+
+st.sidebar.markdown("<div class='section-title'>Tools</div>", unsafe_allow_html=True)
+
+enable_pdf = st.sidebar.toggle("Enable PDF Mode", value=True)
+enable_web = st.sidebar.toggle("Enable Website Mode", value=True)
+
+st.sidebar.markdown("<div class='section-title'>Uploads</div>", unsafe_allow_html=True)
+
+if enable_pdf:
+    pdf_file = st.sidebar.file_uploader("Upload PDF", type=["pdf"])
+    if pdf_file:
+        st.session_state.pdf_text = get_pdf_text(pdf_file)
+        st.sidebar.success("PDF Loaded")
+
+if enable_web:
+    url = st.sidebar.text_input("Website URL")
+    if url:
+        try:
+            st.session_state.web_text = get_website_text(url)
+            st.sidebar.success("Website Loaded")
+        except:
+            st.sidebar.error("Website Load Failed")
+
+st.sidebar.markdown("<div class='section-title'>Chat Controls</div>", unsafe_allow_html=True)
+
+if st.sidebar.button("🧹 Clear Chat"):
+    st.session_state.chat = []
+    st.success("Chat Cleared")
+    st.rerun()
+
+# ----------------------------
+# Main Layout
+# ----------------------------
+col1, col2 = st.columns([3, 1])
+
+with col1:
+    st.markdown("## 💬 Premium Chat")
+
+    for msg in st.session_state.chat:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+
+with col2:
+    st.markdown("## 🛠 Repair Tools")
+
+    repair_mode = st.radio("Select Mode", [
+        "Normal Chat",
+        "Repair Code",
+        "Explain Code",
+        "Optimize Code",
+        "Security Audit",
+        "Build Project"
+    ])
+
+    st.markdown("### Quick Actions")
+
+    if st.button("📌 Make Answer Short"):
+        st.session_state.chat.append({"role": "user", "content": "From now on, keep answers short and direct."})
+        st.rerun()
+
+    if st.button("📌 Make Answer Detailed"):
+        st.session_state.chat.append({"role": "user", "content": "From now on, provide detailed step-by-step answers."})
+        st.rerun()
+
+# ----------------------------
+# Chat Input (Bottom Like ChatGPT)
+# ----------------------------
+user_input = st.chat_input("Message... (Type here)")
 
 if user_input:
+    # Rate limit control
+    if time.time() - st.session_state.last_request < 2:
+        st.warning("Please wait 2 seconds before sending another message.")
+        st.stop()
+
+    st.session_state.last_request = time.time()
+
     st.session_state.chat.append({"role": "user", "content": user_input})
 
-    context = ""
+    # Context Builder
+    context = f"User selected tone: {tone}\n"
+    context += f"Mode: {repair_mode}\n"
 
-    if pdf_text:
-        context += f"\nPDF CONTENT:\n{pdf_text}\n"
+    if enable_pdf and st.session_state.pdf_text:
+        context += f"\nPDF CONTENT:\n{st.session_state.pdf_text}\n"
 
-    if web_text:
-        context += f"\nWEBSITE CONTENT:\n{web_text}\n"
+    if enable_web and st.session_state.web_text:
+        context += f"\nWEBSITE CONTENT:\n{st.session_state.web_text}\n"
+
+    # Mode-based prompt
+    if repair_mode == "Repair Code":
+        context += "\nUser wants full code repair with best practices.\n"
+    elif repair_mode == "Explain Code":
+        context += "\nUser wants clear explanation step-by-step.\n"
+    elif repair_mode == "Optimize Code":
+        context += "\nUser wants performance optimization.\n"
+    elif repair_mode == "Security Audit":
+        context += "\nUser wants security vulnerability audit and fixes.\n"
+    elif repair_mode == "Build Project":
+        context += "\nUser wants a full project structure with files and commands.\n"
 
     messages = st.session_state.chat.copy()
     messages.append({"role": "system", "content": context})
 
-    response = ask_model(messages, temperature)
-
-    st.session_state.chat.append({"role": "assistant", "content": response})
-
-    st.rerun()
-
-# ----------------------------
-# CODE DEBUGGER TAB
-# ----------------------------
-st.markdown("---")
-st.subheader("Code Debugger / Repair Mode")
-
-code_input = st.text_area("Paste your code here", height=250)
-
-goal = st.text_input("What do you want? (fix, optimize, explain)")
-
-if st.button("Run Repair"):
-    if not code_input:
-        st.warning("Please paste code")
-    else:
-        prompt = f"""
-You are a senior engineer.
-
-TASK: {goal}
-
-Analyze and fix this code:
-
-{code_input}
-"""
-        result = ask_model([{"role": "user", "content": prompt}], temperature=0.2)
-        st.markdown(result)
+    try:
+        reply = openrouter_chat(messages, model=model, temperature=temperature)
+        st.session_state.chat.append({"role": "assistant", "content": reply})
+        st.rerun()
+    except Exception as e:
+        st.error(f"API Error: {e}")
