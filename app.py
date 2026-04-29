@@ -1,5 +1,5 @@
 import streamlit.components.v1 as componentsimport 
-streamlit as st
+import streamlit as st
 import os
 import requests
 import json
