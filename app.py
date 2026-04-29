@@ -1,4 +1,5 @@
-import streamlit as st
+import streamlit.components.v1 as componentsimport 
+streamlit as st
 import os
 import requests
 import json
@@ -318,3 +319,17 @@ Voice Mode:
 - Ask: "Did you understand?" and "Should I repeat?"
 - Keep answers friendly and conversational.
 """
+def speak(text, lang="en-US"):
+    text = text.replace("\n", " ").replace('"', "'")
+    js = f"""
+    <script>
+    var msg = new SpeechSynthesisUtterance("{text}");
+    msg.lang = "{lang}";
+    msg.rate = 1;
+    msg.pitch = 1;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(msg);
+    </script>
+    """
+    components.html(js, height=0)
+    speak(response)
