@@ -298,3 +298,10 @@ if user_input:
         st.rerun()
     except Exception as e:
         st.error(f"API Error: {e}")
+        Voice Interaction Mode:
+- If the user requests voice conversation, respond in short spoken-style sentences.
+- Use simple everyday language like a human.
+- If the user cannot read, explain everything slowly in easy words.
+- Ask confirmation questions like: "Did you understand?" and "Should I repeat?"
+- If user says "I cannot read" or "I don't understand text", respond in a very simple speaking style.
+- Keep answers short, clear, and friendly.
