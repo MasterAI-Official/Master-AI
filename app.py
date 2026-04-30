@@ -143,3 +143,15 @@ st.markdown(
     "</p>", 
     unsafe_allow_html=True
                 )
+voice_prompt = """A highly professional Indian Hindi male voice, age 32-35. 
+Confident, clear, and authoritative tone with a warm and trustworthy feel. 
+Excellent pronunciation, perfect diction, neutral Indian accent, 
+smooth natural delivery, rich voice timbre, and high clarity. 
+Studio quality recording, no background noise, natural intonation, 
+subtle emotional expression, and calm professional pacing with proper pauses."""
+
+# Put your text below this prompt
+user_text = """Paste your Hindi text here that you want to convert into speech."""
+
+# Final prompt that you will send to the model
+full_prompt = f"{voice_prompt} Speak the following text naturally and professionally:\n\n{user_text}"
