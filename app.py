@@ -1,230 +1,150 @@
 import streamlit as st
 import requests
 import json
-import time
-import os
-from dotenv import load_dotenv
-from pypdf import PdfReader
-from bs4 import BeautifulSoup
-from gtts import gTTS
-import tempfile
-import base64
-import streamlit.components.v1 as components
-from streamlit_mic_recorder import mic_recorder
+from datetime import datetime
 
-# ----------------------------
-# API KEY
-# ----------------------------
-load_dotenv()
+# ==================== PAGE CONFIG ====================
+st.set_page_config(
+    page_title="Master AI - Your Personal Genius",
+    page_icon="🧠",
+    layout="centered",
+    initial_sidebar_state="expanded"
+)
 
-API_KEY = None
-if "OPENROUTER_API_KEY" in st.secrets:
-    API_KEY = st.secrets["OPENROUTER_API_KEY"]
-else:
-    API_KEY = os.getenv("OPENROUTER_API_KEY")
+# ==================== CUSTOM CSS (Modern & Beautiful) ====================
+st.markdown("""
+<style>
+    .main {background-color: #0a0a0a; color: #ffffff;}
+    .stChatMessage {
+        border-radius: 18px;
+        padding: 14px 20px;
+        margin: 10px 0;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    }
+    h1 {color: #00ff9d; text-align: center;}
+    .subtitle {text-align: center; color: #aaaaaa; font-size: 1.15rem;}
+</style>
+""", unsafe_allow_html=True)
 
-if not API_KEY:
-    st.error("Missing API Key")
+# ==================== TITLE ====================
+st.title("🧠 Master AI")
+st.markdown('<p class="subtitle">Your warm, intelligent & super helpful AI companion</p>', unsafe_allow_html=True)
+
+# ==================== SIDEBAR ====================
+with st.sidebar:
+    st.header("⚙️ Settings")
+    
+    # OpenRouter Models (आप अपनी पसंद के हिसाब से बदल सकते हो)
+    model_options = {
+        "GPT-4o": "openai/gpt-4o",
+        "Claude 3.5 Sonnet": "anthropic/claude-3.5-sonnet",
+        "Grok Beta": "x-ai/grok-beta",
+        "Llama 3.1 405B": "meta-llama/llama-3.1-405b-instruct",
+        "Gemini 2.0 Flash": "google/gemini-2.0-flash-exp"
+    }
+    
+    selected_model_name = st.selectbox("Choose Model", list(model_options.keys()), index=0)
+    selected_model = model_options[selected_model_name]
+    
+    temperature = st.slider("Creativity / Temperature", 0.0, 1.0, 0.75, 0.05)
+    
+    st.divider()
+    voice_enabled = st.toggle("🎤 Voice Input Enabled", value=True)
+    
+    st.divider()
+    st.markdown("**About**")
+    st.write("Master AI — Built with love in Karachi. I can help you in any language and with almost anything.")
+    st.caption("Made in Pakistan 🇵🇰")
+
+# ==================== OPENROUTER API KEY ====================
+# Streamlit Secrets में डालें: settings → Secrets
+# Key name: OPENROUTER_API_KEY
+OPENROUTER_API_KEY = st.secrets.get("OPENROUTER_API_KEY")
+
+if not OPENROUTER_API_KEY:
+    st.error("⚠️ OpenRouter API Key नहीं मिली। Streamlit Secrets में OPENROUTER_API_KEY डालें।")
     st.stop()
 
-# ----------------------------
-# SYSTEM PROMPT (MASTER BRAIN)
-# ----------------------------
+# ==================== SYSTEM PROMPT (Humanized & Powerful) ====================
 SYSTEM_PROMPT = """
-You are a world-class AI assistant and senior software engineer.
+You are Master AI, a highly intelligent, warm, friendly, and extremely capable AI companion created by Virat from Karachi.
 
-Rules:
-- Never mention AI or system identity.
-- Respond naturally like a human expert.
-- Be precise, helpful, and structured.
-- If voice mode is enabled, respond in short spoken sentences.
-- If user is confused, simplify explanation.
+Personality:
+- Talk like a smart, empathetic, and slightly fun human friend. Natural, conversational, never robotic.
+- Be helpful with anything: coding, studies, writing, ideas, research, translation, career advice, or casual chat.
+- You have vast knowledge of the world and current information.
+- Always reply in the same language the user is using (Hindi, Urdu, English, or any other).
+- Match the user's tone — friendly, professional, motivational, or casual.
+- Use bullet points or clear formatting when it makes the answer better.
+- Never give illegal, harmful, or unethical advice.
+- Be honest if you don't know something.
 
-Capabilities:
-- Coding expert
-- Debugging and repair
-- Web understanding
-- PDF analysis
-- Project building guidance
+Your goal: Make the user's life easier, better, and more enjoyable.
 """
 
-# ----------------------------
-# API CALL
-# ----------------------------
-def ask_ai(messages):
-    url = "https://openrouter.ai/api/v1/chat/completions"
+# ==================== SESSION STATE ====================
+if "messages" not in st.session_state:
+    st.session_state.messages = [
+        {"role": "assistant", "content": "Assalam-o-Alaikum! 👋 Main Master AI hoon. Kaise ho aaj? Kya madad chahiye bhai?"}
+    ]
 
-    headers = {
-        "Authorization": f"Bearer {API_KEY}",
-        "Content-Type": "application/json"
-    }
+# ==================== DISPLAY CHAT HISTORY ====================
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
 
-    payload = {
-        "model": "deepseek/deepseek-chat",
-        "messages": [{"role": "system", "content": SYSTEM_PROMPT}] + messages,
-        "temperature": 0.6
-    }
-
-    res = requests.post(url, headers=headers, data=json.dumps(payload))
-    return res.json()["choices"][0]["message"]["content"]
-
-# ----------------------------
-# TEXT TO SPEECH
-# ----------------------------
-def speak(text):
-    tts = gTTS(text=text, lang="en")
-    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
-    tts.save(tmp.name)
-
-    audio = open(tmp.name, "rb").read()
-    b64 = base64.b64encode(audio).decode()
-
-    audio_html = f"""
-    <audio autoplay controls>
-    <source src="data:audio/mp3;base64,{b64}">
-    </audio>
-    """
-    components.html(audio_html, height=100)
-
-# ----------------------------
-# WEBSITE SCRAPER
-# ----------------------------
-def get_web(url):
-    r = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
-    soup = BeautifulSoup(r.text, "html.parser")
-
-    for t in soup(["script", "style"]):
-        t.extract()
-
-    return " ".join(soup.get_text().split())[:6000]
-
-# ----------------------------
-# PDF READER
-# ----------------------------
-def get_pdf(file):
-    reader = PdfReader(file)
-    text = ""
-    for p in reader.pages:
-        t = p.extract_text()
-        if t:
-            text += t + "\n"
-    return text[:8000]
-
-# ----------------------------
-# UI CONFIG
-# ----------------------------
-st.set_page_config(page_title="Master AI", layout="wide")
-
-st.title("💎 Master AI - Ultimate Assistant")
-
-# ----------------------------
-# SESSION
-# ----------------------------
-if "chat" not in st.session_state:
-    st.session_state.chat = []
-
-if "web" not in st.session_state:
-    st.session_state.web = ""
-
-if "pdf" not in st.session_state:
-    st.session_state.pdf = ""
-
-# ----------------------------
-# SIDEBAR
-# ----------------------------
-st.sidebar.title("⚙️ Settings")
-
-voice_output = st.sidebar.toggle("🔊 Voice Output", value=True)
-voice_input = st.sidebar.toggle("🎤 Voice Input", value=True)
-
-model = st.sidebar.selectbox("Model", ["deepseek/deepseek-chat"])
-
-st.sidebar.markdown("---")
-
-pdf_file = st.sidebar.file_uploader("Upload PDF")
-
-if pdf_file:
-    st.session_state.pdf = get_pdf(pdf_file)
-
-url = st.sidebar.text_input("Website URL")
-
-if url:
-    try:
-        st.session_state.web = get_web(url)
-    except:
-        st.error("Website load failed")
-
-if st.sidebar.button("🧹 Clear Chat"):
-    st.session_state.chat = []
-    st.rerun()
-
-# ----------------------------
-# CHAT UI
-# ----------------------------
-for m in st.session_state.chat:
-    with st.chat_message(m["role"]):
-        st.write(m["content"])
-
-# ----------------------------
-# VOICE INPUT
-# ----------------------------
-voice_text = None
-
-if voice_input:
-    audio = mic_recorder(start_prompt="🎤 Speak", stop_prompt="⏹ Stop", just_once=True)
-    if audio:
-        voice_text = "User spoke something (voice input detected)"
-
-# ----------------------------
-# INPUT
-# ----------------------------
-user_input = st.chat_input("Type message...")
-
-if user_input or voice_text:
-
-    text = user_input if user_input else voice_text
-
-    st.session_state.chat.append({"role": "user", "content": text})
-
-    context = ""
-
-    if st.session_state.pdf:
-        context += f"PDF:\n{st.session_state.pdf}\n"
-
-    if st.session_state.web:
-        context += f"WEB:\n{st.session_state.web}\n"
-
-    messages = st.session_state.chat.copy()
-    messages.append({"role": "system", "content": context})
-
-    response = ask_ai(messages)
-
-    st.session_state.chat.append({"role": "assistant", "content": response})
+# ==================== CHAT INPUT ====================
+if user_input := st.chat_input("Type your message here... या बोलकर पूछो"):
+    
+    st.session_state.messages.append({"role": "user", "content": user_input})
+    with st.chat_message("user"):
+        st.markdown(user_input)
 
     with st.chat_message("assistant"):
-        st.write(response)
+        with st.spinner("Soch raha hoon..."):
+            try:
+                headers = {
+                    "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                    "HTTP-Referer": "https://master-ai.streamlit.app/",
+                    "X-Title": "Master AI",
+                    "Content-Type": "application/json"
+                }
 
-        if voice_output:
-            speak(response)
+                payload = {
+                    "model": selected_model,
+                    "messages": [
+                        {"role": "system", "content": SYSTEM_PROMPT}
+                    ] + [
+                        {"role": m["role"], "content": m["content"]} for m in st.session_state.messages
+                    ],
+                    "temperature": temperature,
+                    "max_tokens": 2048
+                }
 
-# ----------------------------
-# ACTION BUTTONS (3 DOT STYLE)
-# ----------------------------
-st.markdown("---")
+                response = requests.post(
+                    "https://openrouter.ai/api/v1/chat/completions",
+                    headers=headers,
+                    json=payload,
+                    timeout=60
+                )
 
-col1, col2, col3 = st.columns(3)
+                if response.status_code == 200:
+                    data = response.json()
+                    ai_reply = data["choices"][0]["message"]["content"]
+                else:
+                    ai_reply = f"Error: {response.status_code} - {response.text[:200]}"
 
-with col1:
-    if st.button("📋 Copy Last"):
-        st.toast("Copy manually (browser)")
+            except Exception as e:
+                ai_reply = f"Sorry, kuch issue aa gaya: {str(e)}"
 
-with col2:
-    if st.button("🔁 Regenerate"):
-        if st.session_state.chat:
-            last = st.session_state.chat[-1]["content"]
-            st.session_state.chat.append({"role": "user", "content": last})
-            st.rerun()
+        st.markdown(ai_reply)
+        st.session_state.messages.append({"role": "assistant", "content": ai_reply})
 
-with col3:
-    if st.button("📤 Share"):
-        st.info("Use browser share / copy link")
+# ==================== FOOTER ====================
+st.divider()
+st.markdown(
+    "<p style='text-align:center; color:#666; font-size:0.9rem;'>"
+    "Master AI © 2026 • Built in Karachi with ❤️ • Powered by OpenRouter"
+    "</p>", 
+    unsafe_allow_html=True
+)
