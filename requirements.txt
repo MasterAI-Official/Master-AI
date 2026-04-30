@@ -1,7 +1,2 @@
-streamlit
-requests
-python-dotenv
-pypdf
-beautifulsoup4
-streamlit-mic-recorder
-gtts
+streamlit==1.42.0
+requests==2.32.3
