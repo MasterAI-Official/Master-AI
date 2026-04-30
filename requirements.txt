@@ -1,9 +1,7 @@
 streamlit
-openai
-python-dotenv
-langdetect
 requests
-beautifulsoup4
+python-dotenv
 pypdf
+beautifulsoup4
 streamlit-mic-recorder
 gtts
