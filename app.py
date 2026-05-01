@@ -1,157 +1,131 @@
 import streamlit as st
-import requests
+import streamlit.components.v1 as components
 
-# ==================== PAGE CONFIG ====================
-st.set_page_config(
-    page_title="Master AI - Your Personal Genius",
-    page_icon="🧠",
-    layout="centered",
-    initial_sidebar_state="expanded"
-)
+# 1. Page Configuration
+st.set_page_config(page_title="AI Custom App", layout="wide", initial_sidebar_state="expanded")
 
-# ==================== CUSTOM CSS - Modern Dark UI ====================
+# 2. Master CSS (The "Brutal" OLED Dark Mode based on your 30 Images)
 st.markdown("""
 <style>
-    .main {background-color: #0a0a0a; color: #ffffff;}
-    .stChatMessage {
-        border-radius: 18px;
-        padding: 14px 20px;
-        margin: 10px 0;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    /* Main Background */
+    .stApp {
+        background-color: #000000;
+        color: #ECECEC;
     }
-    h1 {color: #00ff9d; text-align: center;}
-    .subtitle {text-align: center; color: #aaaaaa; font-size: 1.15rem;}
+    
+    /* Sidebar Styling */
+    [data-testid="stSidebar"] {
+        background-color: #000000;
+        border-right: 1px solid #2F2F2F;
+    }
+    
+    /* Custom Menu Cards (Settings/Memories style) */
+    .custom-card {
+        background-color: #171717;
+        padding: 18px;
+        border-radius: 15px;
+        border: 1px solid #2F2F2F;
+        margin-bottom: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: 0.3s;
+        cursor: pointer;
+    }
+    .custom-card:hover {
+        background-color: #212121;
+        border-color: #444;
+    }
+
+    /* ChatGPT Style Chat Input Bar (Capsule Shape) */
+    .stChatInputContainer {
+        padding-bottom: 20px;
+        background-color: transparent !important;
+    }
+    
+    div[data-testid="stChatInput"] {
+        border-radius: 30px !important;
+        border: 1px solid #333 !important;
+        background-color: #212121 !important;
+        padding: 5px 15px;
+    }
+
+    /* Action Buttons (Create Image, Write/Edit) */
+    .action-btn {
+        background-color: #171717;
+        border: 1px solid #2F2F2F;
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        color: white;
+        font-weight: 500;
+    }
+
+    /* iOS Style Toggle (Using CSS) */
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 40px;
+        height: 22px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# ==================== HEADER ====================
-st.title("🧠 Master AI")
-st.markdown('<p class="subtitle">Your warm, intelligent, and super helpful AI companion</p>', unsafe_allow_html=True)
-
-# ==================== SIDEBAR ====================
-with st.sidebar:
-    st.header("⚙️ Settings")
-    
-    model_options = {
-        "GPT-4o": "openai/gpt-4o",
-        "Claude 3.5 Sonnet": "anthropic/claude-3.5-sonnet",
-        "Grok Beta": "x-ai/grok-beta",
-        "Llama 3.1 405B": "meta-llama/llama-3.1-405b-instruct",
-        "Gemini 2.0 Flash": "google/gemini-2.0-flash-exp"
+# 3. JavaScript for Interactive Elements (Voice Pulse & Auto-Scroll)
+components.html("""
+<script>
+    const scrollChat = () => {
+        window.scrollTo(0, document.body.scrollHeight);
     }
-    
-    selected_model_name = st.selectbox("Choose Model", list(model_options.keys()), index=0)
-    selected_model = model_options[selected_model_name]
-    
-    temperature = st.slider("Creativity Level", 0.0, 1.0, 0.75, 0.05)
-    
-    st.divider()
-    voice_enabled = st.toggle("🎤 Voice Input Enabled", value=True)
-    
-    st.divider()
-    st.markdown("**About Master AI**")
-    st.write("A friendly and powerful AI assistant built in Karachi. I can help you in any language with almost anything.")
-    st.caption("Made in Pakistan 🇵🇰")
+    // Listen for changes and scroll
+    const observer = new MutationObserver(scrollChat);
+    observer.observe(document.body, { childList: true, subtree: true });
+</script>
+""", height=0)
 
-# ==================== OPENROUTER API KEY ====================
-OPENROUTER_API_KEY = st.secrets.get("OPENROUTER_API_KEY")
+# 4. App Logic & UI Structure
+def main():
+    # Sidebar Navigation (History)
+    with st.sidebar:
+        st.markdown("<h2 style='color:white;'>ChatGPT</h2>", unsafe_allow_html=True)
+        if st.button("＋ New Chat", use_container_width=True):
+            st.session_state.messages = []
+        
+        st.markdown("---")
+        st.caption("Recent")
+        st.markdown("📁 Project: Drone Tech Nova")
+        st.markdown("📁 Mystery Script Part 1")
+        st.markdown("📁 Karachi Speed Kix Research")
 
-if not OPENROUTER_API_KEY:
-    st.error("⚠️ OpenRouter API Key is missing. Please add OPENROUTER_API_KEY in Streamlit Secrets.")
-    st.stop()
+    # Main Interface
+    tab1, tab2 = st.tabs(["💬 Chat", "⚙️ Settings"])
 
-# ==================== STRONG HUMANIZED SYSTEM PROMPT ====================
-SYSTEM_PROMPT = """
-You are Master AI, a highly intelligent, warm, friendly, and extremely capable AI companion created by Virat from Karachi.
+    with tab1:
+        # Home Screen Action Cards (Based on your image 1000216467.jpg)
+        if "messages" not in st.session_state or len(st.session_state.messages) == 0:
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown('<div class="custom-card">🎨 Create an image</div>', unsafe_allow_html=True)
+                st.markdown('<div class="custom-card">💡 Brainstorm</div>', unsafe_allow_html=True)
+            with col2:
+                st.markdown('<div class="custom-card">📝 Write or edit</div>', unsafe_allow_html=True)
+                st.markdown('<div class="custom-card">🔍 Deep Research</div>', unsafe_allow_html=True)
+        
+        # Chat Input
+        if prompt := st.chat_input("Message..."):
+            with st.chat_message("user"):
+                st.markdown(prompt)
 
-Personality:
-- Speak like a smart, empathetic, and slightly fun human friend. Natural, conversational, and never robotic.
-- Be helpful with anything: coding, studies, writing, ideas, research, translation, career advice, or casual chat.
-- You have vast knowledge of the world and current information.
-- Always reply in the same language the user is using.
-- Match the user's tone — friendly, professional, motivational, or casual as needed.
-- Use bullet points or clear formatting when it makes the answer better.
-- Never give illegal, harmful, or unethical advice.
-- Be honest if you don't know something.
+    with tab2:
+        # Settings & Memories (Based on your images 1000216469.jpg, 1000216474.jpg)
+        st.markdown("### Personalization")
+        st.markdown('<div class="custom-card">🧠 Memories <span>></span></div>', unsafe_allow_html=True)
+        st.markdown('<div class="custom-card">👤 Personal Profile <span>></span></div>', unsafe_allow_html=True)
+        
+        st.markdown("### Data Controls")
+        st.markdown('<div class="custom-card">📤 Export Data <span>></span></div>', unsafe_allow_html=True)
+        st.markdown('<div class="custom-card" style="color:#FF4B4B;">🗑️ Delete Account <span>></span></div>', unsafe_allow_html=True)
 
-Your goal: Make the user's life easier, better, and more enjoyable.
-"""
-
-# ==================== SESSION STATE ====================
-if "messages" not in st.session_state:
-    st.session_state.messages = [
-        {"role": "assistant", "content": "Hey there! 👋 I'm Master AI, your personal genius companion. How are you today? What can I help you with?"}
-    ]
-
-# ==================== DISPLAY CHAT HISTORY ====================
-for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
-
-# ==================== CHAT INPUT ====================
-if user_input := st.chat_input("Type your message here..."):
-    
-    st.session_state.messages.append({"role": "user", "content": user_input})
-    with st.chat_message("user"):
-        st.markdown(user_input)
-
-    with st.chat_message("assistant"):
-        with st.spinner("Thinking..."):
-            try:
-                headers = {
-                    "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-                    "HTTP-Referer": "https://master-ai.streamlit.app/",
-                    "X-Title": "Master AI",
-                    "Content-Type": "application/json"
-                }
-
-                payload = {
-                    "model": selected_model,
-                    "messages": [
-                        {"role": "system", "content": SYSTEM_PROMPT}
-                    ] + [
-                        {"role": m["role"], "content": m["content"]} for m in st.session_state.messages
-                    ],
-                    "temperature": temperature,
-                    "max_tokens": 2048
-                }
-
-                response = requests.post(
-                    "https://openrouter.ai/api/v1/chat/completions",
-                    headers=headers,
-                    json=payload,
-                    timeout=60
-                )
-
-                if response.status_code == 200:
-                    data = response.json()
-                    ai_reply = data["choices"][0]["message"]["content"]
-                else:
-                    ai_reply = f"Error {response.status_code}: Unable to get response from OpenRouter."
-
-            except Exception as e:
-                ai_reply = f"Sorry, something went wrong: {str(e)}"
-
-        st.markdown(ai_reply)
-        st.session_state.messages.append({"role": "assistant", "content": ai_reply})
-
-# ==================== FOOTER ====================
-st.divider()
-st.markdown(
-    "<p style='text-align:center; color:#666; font-size:0.9rem;'>"
-    "Master AI © 2026 • Built in Karachi with ❤️ • Powered by OpenRouter"
-    "</p>", 
-    unsafe_allow_html=True
-                )
-voice_prompt = """A highly professional Indian Hindi male voice, age 32-35. 
-Confident, clear, and authoritative tone with a warm and trustworthy feel. 
-Excellent pronunciation, perfect diction, neutral Indian accent, 
-smooth natural delivery, rich voice timbre, and high clarity. 
-Studio quality recording, no background noise, natural intonation, 
-subtle emotional expression, and calm professional pacing with proper pauses."""
-
-# Put your text below this prompt
-user_text = """Paste your Hindi text here that you want to convert into speech."""
-
-# Final prompt that you will send to the model
-full_prompt = f"{voice_prompt} Speak the following text naturally and professionally:\n\n{user_text}"
+if __name__ == "__main__":
+    main()
+            
