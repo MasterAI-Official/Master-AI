@@ -1,131 +1,201 @@
 import streamlit as st
-import streamlit.components.v1 as components
+import time
 
-# 1. Page Configuration
-st.set_page_config(page_title="AI Custom App", layout="wide", initial_sidebar_state="expanded")
+# --- 1. SYSTEM PROMPT & DOMAIN INTELLIGENCE ---
+# This ensures the AI always acts within your specific parameters
+SYSTEM_PROMPT = """
+Role: Nova AI Premium Assistant.
+Visual Context: Mobile-first OLED Black interface.
+Personalization Memory: 
+- User prefers Comma or Wolf cut hairstyles.
+- User is an expert in Pigeon breeds (Lal Gandedar, Chitte White).
+- Knowledge Focus: DJI Mini 3, Redmi Smartphones, YouTube SEO (Tech Nova, Master Minds).
+- Local Intelligence: Karachi focus (Landmarks, Speed Kix motorcycle dealership).
+Tone: Snappy, high-end, multi-part mystery narrative capability.
+"""
 
-# 2. Master CSS (The "Brutal" OLED Dark Mode based on your 30 Images)
-st.markdown("""
-<style>
-    /* Main Background */
-    .stApp {
+# --- 2. PAGE CONFIG & UI THEME (OLED BLACK) ---
+st.set_page_config(page_title="Nova AI", layout="centered", initial_sidebar_state="collapsed")
+
+# Custom CSS for the "OLED Black" Standard and "Floating Capsule"
+st.markdown(f"""
+    <style>
+    /* OLED Black Standard */
+    .stApp {{
         background-color: #000000;
         color: #ECECEC;
-    }
+    }}
     
-    /* Sidebar Styling */
-    [data-testid="stSidebar"] {
-        background-color: #000000;
-        border-right: 1px solid #2F2F2F;
-    }
-    
-    /* Custom Menu Cards (Settings/Memories style) */
-    .custom-card {
+    /* Sidebar styling */
+    [data-testid="stSidebar"] {{
         background-color: #171717;
-        padding: 18px;
-        border-radius: 15px;
-        border: 1px solid #2F2F2F;
-        margin-bottom: 12px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        transition: 0.3s;
-        cursor: pointer;
-    }
-    .custom-card:hover {
-        background-color: #212121;
-        border-color: #444;
-    }
+        border-right: 1px solid #212121;
+    }}
 
-    /* ChatGPT Style Chat Input Bar (Capsule Shape) */
-    .stChatInputContainer {
+    /* Typography */
+    h1, h2, h3, p, span, label {{
+        color: #ECECEC !important;
+        font-family: 'Inter', sans-serif;
+    }}
+    .secondary-label {{
+        color: #B4B4B4 !important;
+        font-size: 0.8rem;
+    }}
+
+    /* The Capsule Interface (Floating Pill Input) */
+    .stChatInputContainer {{
         padding-bottom: 20px;
-        background-color: transparent !important;
-    }
-    
-    div[data-testid="stChatInput"] {
-        border-radius: 30px !important;
-        border: 1px solid #333 !important;
-        background-color: #212121 !important;
-        padding: 5px 15px;
-    }
+    }}
+    .stChatInputContainer > div {{
+        background-color: #171717 !important;
+        border: 1px solid #212121 !important;
+        border-radius: 30px !important; /* 30px Border Radius */
+        padding: 8px 15px;
+    }}
 
-    /* Action Buttons (Create Image, Write/Edit) */
-    .action-btn {
+    /* Interactive Cards */
+    .action-card {{
         background-color: #171717;
-        border: 1px solid #2F2F2F;
-        border-radius: 12px;
-        padding: 20px;
-        text-align: center;
-        color: white;
-        font-weight: 500;
-    }
+        border: 1px solid #212121;
+        border-radius: 15px;
+        padding: 15px;
+        margin-bottom: 10px;
+        transition: 0.3s ease;
+    }}
+    .action-card:hover {{
+        background-color: #212121;
+        border-color: #ECECEC;
+    }}
 
-    /* iOS Style Toggle (Using CSS) */
-    .switch {
-        position: relative;
-        display: inline-block;
-        width: 40px;
-        height: 22px;
-    }
-</style>
+    /* Voice Mode Overlay */
+    .voice-mode {{
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: #000000;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }}
+    
+    /* Animation for Waveform */
+    .waveform {{
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }}
+    .bar {{
+        width: 4px;
+        height: 20px;
+        background: #ECECEC;
+        border-radius: 10px;
+        animation: wave 1s infinite ease-in-out;
+    }}
+    @keyframes wave {{
+        0%, 100% {{ height: 10px; }}
+        50% {{ height: 50px; }}
+    }}
+    </style>
 """, unsafe_allow_html=True)
 
-# 3. JavaScript for Interactive Elements (Voice Pulse & Auto-Scroll)
-components.html("""
-<script>
-    const scrollChat = () => {
-        window.scrollTo(0, document.body.scrollHeight);
-    }
-    // Listen for changes and scroll
-    const observer = new MutationObserver(scrollChat);
-    observer.observe(document.body, { childList: true, subtree: true });
-</script>
-""", height=0)
+# --- 3. SESSION STATE (MEMORY) ---
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+if "voice_active" not in st.session_state:
+    st.session_state.voice_active = False
 
-# 4. App Logic & UI Structure
-def main():
-    # Sidebar Navigation (History)
-    with st.sidebar:
-        st.markdown("<h2 style='color:white;'>ChatGPT</h2>", unsafe_allow_html=True)
-        if st.button("＋ New Chat", use_container_width=True):
+# --- 4. SIDEBAR (HIERARCHICAL SETTINGS) ---
+with st.sidebar:
+    st.title("Nova Settings")
+    
+    with st.expander("Personalization"):
+        st.toggle("Memory Toggles", value=True)
+        st.write("Current Style: Comma/Wolf Cut")
+        st.write("Hobby: Pigeon Breeding")
+        
+    with st.expander("Data Controls"):
+        st.button("Export Chat History")
+        st.button("Archive Conversations")
+        if st.button("Permanently Delete", type="primary"):
             st.session_state.messages = []
-        
-        st.markdown("---")
-        st.caption("Recent")
-        st.markdown("📁 Project: Drone Tech Nova")
-        st.markdown("📁 Mystery Script Part 1")
-        st.markdown("📁 Karachi Speed Kix Research")
-
-    # Main Interface
-    tab1, tab2 = st.tabs(["💬 Chat", "⚙️ Settings"])
-
-    with tab1:
-        # Home Screen Action Cards (Based on your image 1000216467.jpg)
-        if "messages" not in st.session_state or len(st.session_state.messages) == 0:
-            col1, col2 = st.columns(2)
-            with col1:
-                st.markdown('<div class="custom-card">🎨 Create an image</div>', unsafe_allow_html=True)
-                st.markdown('<div class="custom-card">💡 Brainstorm</div>', unsafe_allow_html=True)
-            with col2:
-                st.markdown('<div class="custom-card">📝 Write or edit</div>', unsafe_allow_html=True)
-                st.markdown('<div class="custom-card">🔍 Deep Research</div>', unsafe_allow_html=True)
-        
-        # Chat Input
-        if prompt := st.chat_input("Message..."):
-            with st.chat_message("user"):
-                st.markdown(prompt)
-
-    with tab2:
-        # Settings & Memories (Based on your images 1000216469.jpg, 1000216474.jpg)
-        st.markdown("### Personalization")
-        st.markdown('<div class="custom-card">🧠 Memories <span>></span></div>', unsafe_allow_html=True)
-        st.markdown('<div class="custom-card">👤 Personal Profile <span>></span></div>', unsafe_allow_html=True)
-        
-        st.markdown("### Data Controls")
-        st.markdown('<div class="custom-card">📤 Export Data <span>></span></div>', unsafe_allow_html=True)
-        st.markdown('<div class="custom-card" style="color:#FF4B4B;">🗑️ Delete Account <span>></span></div>', unsafe_allow_html=True)
-
-if __name__ == "__main__":
-    main()
             
+    with st.expander("Security"):
+        st.toggle("Parental Controls", value=False)
+        st.button("Account Linking")
+
+# --- 5. VOICE MODE UI ---
+if st.session_state.voice_active:
+    st.markdown("""
+        <div class="voice-mode">
+            <div class="waveform">
+                <div class="bar" style="animation-delay: 0.0s"></div>
+                <div class="bar" style="animation-delay: 0.1s"></div>
+                <div class="bar" style="animation-delay: 0.2s"></div>
+                <div class="bar" style="animation-delay: 0.3s"></div>
+                <div class="bar" style="animation-delay: 0.4s"></div>
+            </div>
+            <p style="margin-top:20px;">Listening to your request...</p>
+        </div>
+    """, unsafe_allow_html=True)
+    if st.button("Exit Voice Mode"):
+        st.session_state.voice_active = False
+        st.rerun()
+    st.stop()
+
+# --- 6. MAIN INTERFACE ---
+st.markdown("### Nova AI")
+st.markdown("<p class='secondary-label'>Premium Intelligence • Karachi Node</p>", unsafe_allow_html=True)
+
+# Action Cards
+cols = st.columns(3)
+with cols[0]:
+    st.markdown('<div class="action-card">🎨 <b>Create</b><br><span class="secondary-label">Visuals</span></div>', unsafe_allow_html=True)
+with cols[1]:
+    st.markdown('<div class="action-card">✍️ <b>Write</b><br><span class="secondary-label">Mystery Suite</span></div>', unsafe_allow_html=True)
+with cols[2]:
+    st.markdown('<div class="action-card">🔍 <b>Research</b><br><span class="secondary-label">Deep Dive</span></div>', unsafe_allow_html=True)
+
+# Chat History
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+# --- 7. CHAT LOGIC (THE BRAIN) ---
+if prompt := st.chat_input("Ask about DJI, Pigeons, or Tech Nova..."):
+    # Add user message
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.markdown(prompt)
+
+    # Generate AI Response
+    with st.chat_message("assistant"):
+        response_placeholder = st.empty()
+        full_response = ""
+        
+        # Simple Logic simulating the knowledge requested
+        if "pigeon" in prompt.lower():
+            ai_text = "I've logged your focus on Lal Gandedar and Chitte White breeds. Are we analyzing bloodlines or looking for market updates in Karachi?"
+        elif "hair" in prompt.lower() or "style" in prompt.lower():
+            ai_text = "Considering your preference for Comma and Wolf cuts, I recommend a high-hold matte pomade for the humid Karachi weather."
+        elif "dji" in prompt.lower() or "mini 3" in prompt.lower():
+            ai_text = "The DJI Mini 3 is perfect for Karachi's coastline. Remember to check local drone regulations and YouTube SEO keywords for 'Tech Nova'."
+        elif "story" in prompt.lower():
+            ai_text = "The shadows stretched across the Speed Kix showroom... (Part 1 of your Mystery Narrative is starting)."
+        else:
+            ai_text = "Processing your request through the Nova neural net. How can I assist with your YouTube SEO or Redmi smartphone specs today?"
+
+        # Snappy typing animation
+        for chunk in ai_text.split():
+            full_response += chunk + " "
+            time.sleep(0.05)
+            response_placeholder.markdown(full_response + "▌")
+        response_placeholder.markdown(full_response)
+        
+    st.session_state.messages.append({"role": "assistant", "content": full_response})
+
+# Voice Mode Trigger (Fixed Floating)
+st.sidebar.divider()
+if st.sidebar.button("🎤 Open Voice Mode"):
+    st.session_state.voice_active = True
+    st.rerun()
